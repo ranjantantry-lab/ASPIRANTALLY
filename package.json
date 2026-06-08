@@ -1,0 +1,230 @@
+import React, { useState, useRef } from "react";
+import { FileText, Upload, Trash2, CheckCircle2, Image as ImageIcon, AlertCircle } from "lucide-react";
+
+interface UploadedFileInfo {
+  name: string;
+  size: number;
+  mimeType: string;
+  data: string; // Base64 string
+}
+
+interface ResumeUploadProps {
+  onFileLoaded: (file: UploadedFileInfo | null) => void;
+  onTextEntered: (text: string) => void;
+  resumeText: string;
+  onClearText: () => void;
+}
+
+export default function ResumeUpload({
+  onFileLoaded,
+  onTextEntered,
+  resumeText,
+  onClearText
+}: ResumeUploadProps) {
+  const [activeTab, setActiveTab] = useState<"file" | "text">("file");
+  const [dragActive, setDragActive] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<UploadedFileInfo | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  };
+
+  const handleFileProcess = (file: File) => {
+    setErrorMsg(null);
+    const validTypes = ["application/pdf", "image/png", "image/jpeg", "image/jpg"];
+    if (!validTypes.includes(file.type)) {
+      setErrorMsg("Unsupported format. Please upload a PDF or an Image (PNG, JPG, JPEG).");
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) { // 8MB limit
+      setErrorMsg("File is too large. Real-time scanning limit is 8MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64Data = reader.result as string;
+      const fileInfo: UploadedFileInfo = {
+        name: file.name,
+        size: file.size,
+        mimeType: file.type,
+        data: base64Data
+      };
+      setSelectedFile(fileInfo);
+      onFileLoaded(fileInfo);
+      // Automatically prefill the plain text field with a placeholder descriptor so validation doesn't lock out
+      onTextEntered(`[Uploaded Resume File: ${file.name} (${formatFileSize(file.size)})]`);
+    };
+    reader.onerror = () => {
+      setErrorMsg("Failed to read file contents.");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileProcess(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    if (e.target.files && e.target.files[0]) {
+      handleFileProcess(e.target.files[0]);
+    }
+  };
+
+  const clearFile = () => {
+    setSelectedFile(null);
+    onFileLoaded(null);
+    onClearText();
+    setErrorMsg(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2 h-full">
+      {/* Option Toggles */}
+      <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-1">
+        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 ml-1 flex items-center gap-1.5">
+          <FileText className="w-3.5 h-3.5 text-blue-600" />
+          Candidate Resume Source
+        </label>
+        
+        <div className="flex bg-slate-100 p-0.5 rounded-lg text-[10px] font-bold">
+          <button
+            type="button"
+            onClick={() => setActiveTab("file")}
+            className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${activeTab === "file" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-800"}`}
+          >
+            Upload File
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("text")}
+            className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${activeTab === "text" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-800"}`}
+          >
+            Paste Text
+          </button>
+        </div>
+      </div>
+
+      {activeTab === "file" ? (
+        <div className="flex-1 flex flex-col h-full min-h-[220px]">
+          {selectedFile ? (
+            /* Upload Success State */
+            <div className="flex-1 border-2 border-dashed border-green-200 bg-green-50/40 rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all relative">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
+                {selectedFile.mimeType.startsWith("image/") ? (
+                  <ImageIcon className="w-6 h-6 text-green-600" />
+                ) : (
+                  <FileText className="w-6 h-6 text-green-600" />
+                )}
+              </div>
+              
+              <h4 className="text-xs font-bold text-slate-800 break-all max-w-[280px]">
+                {selectedFile.name}
+              </h4>
+              <p className="text-[10px] text-slate-500 font-medium mt-1">
+                Size: {formatFileSize(selectedFile.size)} • Type: {selectedFile.mimeType.split("/").pop()?.toUpperCase()}
+              </p>
+              
+              <div className="mt-3 flex items-center gap-1 text-[10px] bg-green-100/60 text-green-800 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Ready to Scan
+              </div>
+
+              <button
+                type="button"
+                onClick={clearFile}
+                className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/80 hover:bg-red-50 text-slate-400 hover:text-red-500 border border-slate-200/60 shadow-xs transition-colors cursor-pointer"
+                title="Remove uploaded resume"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            /* Idle Drag Drop Upload Zone */
+            <div
+              onDragEnter={handleDrag}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`flex-1 border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all min-h-[220px] ${
+                dragActive 
+                  ? "border-blue-500 bg-blue-50/50 shadow-sm" 
+                  : "border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50/40"
+              }`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg"
+                onChange={handleChange}
+                className="hidden"
+              />
+              
+              <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mb-3 text-slate-500 hover:scale-105 transition-transform">
+                <Upload className="w-5 h-5 text-slate-600 animate-pulse" />
+              </div>
+
+              <p className="text-xs font-bold text-slate-700">
+                Drag & drop your Resume or <span className="text-blue-600 hover:underline">browse files</span>
+              </p>
+              <p className="text-[10px] text-slate-400 font-semibold mt-1">
+                Supports PDF, PDF scans, PNG, JPG, JPEG (up to 8MB)
+              </p>
+
+              {errorMsg && (
+                <div className="mt-3 flex items-center gap-1.5 text-[10px] text-red-600 bg-red-50 px-3 py-1.5 rounded-lg font-bold border border-red-100 animate-slide-up">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Manual Plain Text Paste Input */
+        <div className="relative flex-1 flex flex-col min-h-[220px]">
+          <textarea
+            value={resumeText.startsWith("[Uploaded Resume File:") ? "" : resumeText}
+            onChange={(e) => onTextEntered(e.target.value)}
+            className="w-full flex-1 p-4 rounded-xl border border-slate-200 bg-white shadow-xs resize-y text-xs text-slate-600 leading-relaxed outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all min-h-[220px]"
+            placeholder="Paste plain text resume details..."
+            id="resume"
+          />
+          {!resumeText && (
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-slate-400 select-none">
+              <FileText className="mb-1 h-8 w-8 text-slate-300" />
+              <p className="font-sans text-xs font-medium">No resume text entered.</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

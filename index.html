@@ -1,0 +1,116 @@
+/**
+ * TypeScript Interfaces for Aspirant Ally App
+ */
+
+export interface TrustGap {
+  title: string;
+  whyGhosted: string;
+  actionableAdvice: string;
+}
+
+export interface PivotLine {
+  originalText: string;
+  tailoredText: string;
+  benefit: string;
+}
+
+export interface FreeCourse {
+  title: string;
+  provider: string;
+  duration: string;
+  link: string;
+}
+
+export interface YouTubeTutorial {
+  title: string;
+  channel: string;
+  duration: string;
+  link: string;
+}
+
+export interface Certification {
+  name: string;
+  body: string;
+  value: string;
+}
+
+export interface PracticeProject {
+  title: string;
+  description: string;
+  techStack: string[];
+  spec: string;
+}
+
+export interface AlumniProfile {
+  id: string;
+  name: string;
+  role: string;
+  company: string;
+  college: string;
+  avatarColor: string;
+  linkedin: string;
+  status: 'idle' | 'requested' | 'accepted';
+  pitch: string;
+  email?: string;
+}
+
+export interface TechnicalQuestion {
+  question: string;
+  expectedAnswer: string;
+  keyPoints: string[];
+}
+
+export interface HRQuestion {
+  question: string;
+  intent: string;
+  sampleAnswer: string;
+}
+
+export interface CompanyIntelligence {
+  name: string;
+  overview: string;
+  recentNews: string[];
+  products: string[];
+  competitors: string[];
+  glassdoorRating: number;
+  difficulty: string;
+  insights: string[];
+}
+
+export interface SimilarRole {
+  roleTitle: string;
+  avgSalary: string;
+  demandLevel: 'High' | 'Medium' | 'Very High';
+  matchPercentage: number;
+}
+
+export interface MarketOpportunity {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  salary: string;
+  matchScore: number;
+  skillsNeeded: string[];
+  applied: boolean;
+}
+
+export interface AuditReport {
+  score: number;
+  trustGaps: TrustGap[];
+  pivotLines: PivotLine[];
+  referralPitch: string;
+  isFallback?: boolean;
+  
+  // New customized sections
+  freeCourses?: FreeCourse[];
+  youtubeTutorials?: YouTubeTutorial[];
+  certifications?: Certification[];
+  practiceProjects?: PracticeProject[];
+  alumni?: AlumniProfile[];
+  technicalQuestions?: TechnicalQuestion[];
+  hrQuestions?: HRQuestion[];
+  companyIntel?: CompanyIntelligence;
+  similarRoles?: SimilarRole[];
+  marketOpportunities?: MarketOpportunity[];
+}
