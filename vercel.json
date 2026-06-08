@@ -1,6 +1,5 @@
 {
   "name": "Aspirant Ally",
-  "description": "A hope-filled dashboard designed to match candidates' resumes with target jobs, offering direct feedback, pivot tables, and personalized referral generation based on their academic credentials.",
   "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
